@@ -11,6 +11,11 @@ func main() {
 	db.StartDbEngine()
 	engine := gin.New()
 	router.MapUrls(engine)
-	engine.Run(":8080")
 
+	// Endpoint de salud
+	engine.GET("/health", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	engine.Run(":8080")
 }

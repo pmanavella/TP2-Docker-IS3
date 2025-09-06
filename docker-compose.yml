@@ -1,19 +1,39 @@
-version: '3'
-
 services:
   database:
-    build: ./database
+    image: mysql:8
     environment:
       MYSQL_DATABASE: arqsoft1
       MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3306:3306"
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
     volumes:
-      - ./database:/docker-entrypoint-initdb.d
+      - ./database:/docker-entrypoint-initdb.d:ro
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root","-p rootroot"]
-      timeout: 20s
-      retries: 10
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  api-qa:
+    image: pmanavella/courses-api:v1.1
+    depends_on:
+      database:
+        condition: service_healthy
+    env_file: .env.qa
+    ports:
+      - "8081:8080"
+
+  api-prod:
+    image: pmanavella/courses-api:v1.1
+    depends_on:
+      database:
+        condition: service_healthy
+    env_file: .env.prod
+    ports:
+      - "8082:8080"
+    restart: always
+
   frontend:
     build: ./frontend
     depends_on:
@@ -21,11 +41,6 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
-  backend:
-    build: ./backend
-    restart: on-failure
-    depends_on:
-      database:
-        condition: service_healthy
-    ports:
-      - "8080:8080"
+
+volumes:
+  mysql_data:
